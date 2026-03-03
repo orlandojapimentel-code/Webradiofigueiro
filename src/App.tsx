@@ -12,56 +12,61 @@ export default function App() {
   const [news, setNews] = useState<any[]>([]);
 
   useEffect(() => {
-    // Dynamically load Centova Cast scripts to ensure they find the elements after mount
-    const scripts = [
-      "https://rs2.ptservidor.com:2199/system/recenttracks.js",
-      "https://rs2.ptservidor.com:2199/system/streaminfo.js",
-      "https://rs2.ptservidor.com:2199/system/request.js"
-    ];
+    console.log('App component mounted');
+    try {
+      // Dynamically load Centova Cast scripts
+      const scripts = [
+        "https://rs2.ptservidor.com:2199/system/recenttracks.js",
+        "https://rs2.ptservidor.com:2199/system/streaminfo.js",
+        "https://rs2.ptservidor.com:2199/system/request.js"
+      ];
 
-    scripts.forEach(src => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      document.body.appendChild(script);
-    });
+      scripts.forEach(src => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        document.body.appendChild(script);
+      });
 
-    // Increment visit count on load
-    fetch('/api/visits/increment', { method: 'POST' })
-      .then(res => res.json())
-      .then(data => setVisitCount(data.count))
-      .catch(err => console.error('Error incrementing visits:', err));
+      // Increment visit count on load
+      fetch('/api/visits/increment', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => setVisitCount(data.count))
+        .catch(err => console.error('Error incrementing visits:', err));
 
-    // Fetch weather (mocking for Figueiró, Amarante)
-    setWeather({ temp: 18, condition: 'Parcialmente Nublado', city: 'Figueiró' });
+      // Fetch weather (mocking for Figueiró, Amarante)
+      setWeather({ temp: 18, condition: 'Parcialmente Nublado', city: 'Figueiró' });
 
-    // Mock news
-    setNews([
-      { 
-        title: "Amarante celebra tradições locais no próximo fim de semana", 
-        source: "Google Notícias", 
-        time: "Há 2 horas",
-        link: "https://news.google.com/search?q=Amarante+tradições+locais"
-      },
-      { 
-        title: "Web Rádio Figueiró lança novo assistente de IA para ouvintes", 
-        source: "WRF News", 
-        time: "Há 5 horas",
-        link: "https://www.webradiofigueiro.pt"
-      },
-      { 
-        title: "Previsão do tempo: Sol regressa à região norte", 
-        source: "Meteo PT", 
-        time: "Há 1 dia",
-        link: "https://news.google.com/search?q=Previsão+do+tempo+Amarante"
+      // Mock news
+      setNews([
+        { 
+          title: "Amarante celebra tradições locais no próximo fim de semana", 
+          source: "Google Notícias", 
+          time: "Há 2 horas",
+          link: "https://news.google.com/search?q=Amarante+tradições+locais"
+        },
+        { 
+          title: "Web Rádio Figueiró lança novo assistente de IA para ouvintes", 
+          source: "WRF News", 
+          time: "Há 5 horas",
+          link: "https://www.webradiofigueiro.pt"
+        },
+        { 
+          title: "Previsão do tempo: Sol regressa à região norte", 
+          source: "Meteo PT", 
+          time: "Há 1 dia",
+          link: "https://news.google.com/search?q=Previsão+do+tempo+Amarante"
+        }
+      ]);
+
+      // Dark mode class
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
-    ]);
-
-    // Dark mode class
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    } catch (error) {
+      console.error('Error in App useEffect:', error);
     }
   }, [isDarkMode]);
 
