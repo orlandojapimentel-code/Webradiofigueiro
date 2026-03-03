@@ -35,8 +35,22 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #141414; color: white;">
+        <div style="text-align: center;">
+          <h2 style="color: #f27d26;">Web Rádio Figueiró</h2>
+          <p>A carregar a emissão...</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT') {
+          console.error('Erro ao carregar script:', e.target.src);
+        }
+      }, true);
+    </script>
   </body>
 </html>
 
