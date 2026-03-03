@@ -3,7 +3,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Send, Sparkles, MessageSquare, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const getAIInstance = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not defined");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const AIService: React.FC = () => {
   const [input, setInput] = useState('');
@@ -17,6 +23,7 @@ export const AIService: React.FC = () => {
     setResponse('');
 
     try {
+      const ai = getAIInstance();
       const prompt = mode === 'dedication' 
         ? `Transforma esta mensagem numa dedicatória profissional de locutor de rádio para a Web Rádio Figueiró: "${input}". A resposta deve ser curta, calorosa e pronta para ser lida no ar.`
         : `Baseado no meu humor "${input}", sugere 3 tipos de música ou temas musicais ideais para eu ouvir agora na Web Rádio Figueiró. Sê inspirador e breve.`;
@@ -29,7 +36,11 @@ export const AIService: React.FC = () => {
       setResponse(result.text || "Desculpa, não consegui gerar uma resposta agora.");
     } catch (error) {
       console.error('AI Error:', error);
-      setResponse("Erro ao conectar com a inteligência artificial. Tenta novamente.");
+      if (error instanceof Error && error.message.includes("GEMINI_API_KEY")) {
+        setResponse("O assistente de IA está temporariamente indisponível (Chave API não configurada). Por favor, contacte o administrador.");
+      } else {
+        setResponse("Erro ao conectar com a inteligência artificial. Tenta novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
