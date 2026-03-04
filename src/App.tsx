@@ -10,6 +10,8 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const [news, setNews] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'home' | 'media'>('home');
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     console.log('App component mounted');
@@ -78,11 +80,35 @@ export default function App() {
       <header className="sticky top-0 z-40 glass border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg overflow-hidden shadow-lg shadow-radio-primary/30">
-              <img src="/logo.png" alt="Logo WRF" className="w-full h-full object-cover" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden shadow-lg shadow-radio-primary/30 flex items-center justify-center bg-radio-primary/10">
+              {!logoError ? (
+                <img 
+                  src="/logo.png" 
+                  alt="Logo WRF" 
+                  className="w-full h-full object-cover" 
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="text-radio-primary font-black text-xl">WRF</span>
+              )}
             </div>
             <h1 className="text-xl font-bold tracking-tight hidden sm:block">Web Rádio Figueiró</h1>
           </div>
+
+          <nav className="flex items-center gap-4 md:gap-6">
+            <button 
+              onClick={() => setActiveTab('home')}
+              className={`text-xs md:text-sm font-bold transition-colors ${activeTab === 'home' ? 'text-radio-primary' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+            >
+              Início
+            </button>
+            <button 
+              onClick={() => setActiveTab('media')}
+              className={`text-xs md:text-sm font-bold transition-colors ${activeTab === 'media' ? 'text-radio-primary' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+            >
+              Explorar Media
+            </button>
+          </nav>
 
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium">
@@ -117,139 +143,168 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column: Info & AI */}
+        {/* Left Column: Content */}
         <div className="lg:col-span-8 space-y-8">
           
-          {/* Hero Section */}
-          <section className="relative h-64 md:h-96 rounded-3xl overflow-hidden shadow-2xl">
-            <img 
-              src="https://picsum.photos/seed/radio/1200/600" 
-              alt="Radio Studio" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-8">
-              <motion.h2 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-4xl md:text-6xl font-black text-white mb-2"
+          <AnimatePresence mode="wait">
+            {activeTab === 'home' ? (
+              <motion.div 
+                key="home"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-8"
               >
-                A Tua Rádio Online
-              </motion.h2>
-              <p className="text-zinc-300 max-w-xl">
-                Emissão 24h a partir de Figueiró, Amarante. A melhor seleção musical, notícias da região e entretenimento sem limites.
-              </p>
-            </div>
-          </section>
-
-          {/* AI Assistant */}
-          <AIService />
-
-          {/* Programming */}
-          <section id="programming" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="glass p-6 rounded-3xl">
-              <div className="flex items-center gap-2 mb-4 text-radio-primary">
-                <Calendar size={20} />
-                <h3 className="text-xl font-bold">Programação Diária</h3>
-              </div>
-              <ul className="space-y-4">
-                <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                  <span className="font-medium">Manhãs WRF</span>
-                  <span className="text-zinc-500">08:00 - 12:00</span>
-                </li>
-                <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                  <span className="font-medium">Tardes de Música</span>
-                  <span className="text-zinc-500">14:00 - 18:00</span>
-                </li>
-                <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                  <span className="font-medium">Noites Tranquilas</span>
-                  <span className="text-zinc-500">21:00 - 00:00</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="glass p-6 rounded-3xl border-l-4 border-radio-primary">
-              <div className="flex items-center gap-2 mb-4 text-radio-primary">
-                <Sparkles size={20} />
-                <h3 className="text-xl font-bold">Destaques Semanais</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl">
-                  <h4 className="font-bold text-radio-primary">Night Grooves</h4>
-                  <p className="text-sm text-zinc-500">Domingos, 22:00 - 00:00</p>
-                  <p className="text-xs mt-1">1ª Hora: DJ Durval | 2ª Hora: DJ Convidado</p>
-                </div>
-                <div className="p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold text-radio-primary">Prazeres Interrompidos</h4>
-                      <p className="text-sm text-zinc-500">Quartas e Sextas, 13:00 (Rep. 20:00)</p>
-                    </div>
-                    <a href="https://www.prazeresinterrompidos.pt/" target="_blank" className="p-2 bg-white dark:bg-zinc-700 rounded-full shadow-sm">
-                      <ExternalLink size={14} />
-                    </a>
+                {/* Hero Section */}
+                <section className="relative h-64 md:h-96 rounded-3xl overflow-hidden shadow-2xl">
+                  <img 
+                    src="https://picsum.photos/seed/radio/1200/600" 
+                    alt="Radio Studio" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-8">
+                    <motion.h2 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-4xl md:text-6xl font-black text-white mb-2"
+                    >
+                      A Tua Rádio Online
+                    </motion.h2>
+                    <p className="text-zinc-300 max-w-xl">
+                      Emissão 24h a partir de Figueiró, Amarante. A melhor seleção musical, notícias da região e entretenimento sem limites.
+                    </p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </section>
+                </section>
 
-          {/* Gallery */}
-          <section id="gallery" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-bold flex items-center gap-2">
-                <ImageIcon className="text-radio-primary" /> Galeria WRF
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {GALLERY_IMAGES.slice(0, 10).map((img, i) => (
-                <motion.div 
-                  key={i}
-                  whileHover={{ scale: 1.05 }}
-                  className="aspect-square rounded-2xl overflow-hidden shadow-md"
-                >
-                  <img src={img.url} alt={`Gallery ${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </motion.div>
-              ))}
-            </div>
-          </section>
+                {/* AI Assistant */}
+                <AIService />
 
-          {/* Videos & Audio */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <PlayCircle className="text-radio-primary" /> Vídeos em Destaque
-              </h3>
-              <div className="aspect-video rounded-3xl overflow-hidden shadow-lg bg-black">
-                <iframe 
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/r5GzTRSWXgc" 
-                  title="YouTube video player" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Music className="text-radio-primary" /> Entrevistas & Podcasts
-              </h3>
-              <div className="glass p-6 rounded-3xl space-y-4">
-                <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
-                  <p className="text-sm font-bold">Entrevista Especial: Ás da Concertina</p>
-                  <audio controls className="w-full mt-2 h-8">
-                    <source src="https://www.dropbox.com/scl/fi/u3r7msk0h6blqpjt8mrba/Entrevista-s-da-concertina-e-Vasquinho-24-01-2025.mp3?rlkey=2sb2suromeylsn0yiwoyc67mn&st=qhx3c6fq&dl=1" type="audio/mpeg" />
-                  </audio>
+                {/* Programming */}
+                <section id="programming" className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="glass p-6 rounded-3xl">
+                    <div className="flex items-center gap-2 mb-4 text-radio-primary">
+                      <Calendar size={20} />
+                      <h3 className="text-xl font-bold">Programação Diária</h3>
+                    </div>
+                    <ul className="space-y-4">
+                      <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                        <span className="font-medium">Manhãs WRF</span>
+                        <span className="text-zinc-500">08:00 - 12:00</span>
+                      </li>
+                      <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                        <span className="font-medium">Tardes de Música</span>
+                        <span className="text-zinc-500">14:00 - 18:00</span>
+                      </li>
+                      <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                        <span className="font-medium">Noites Tranquilas</span>
+                        <span className="text-zinc-500">21:00 - 00:00</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="glass p-6 rounded-3xl border-l-4 border-radio-primary">
+                    <div className="flex items-center gap-2 mb-4 text-radio-primary">
+                      <Sparkles size={20} />
+                      <h3 className="text-xl font-bold">Destaques Semanais</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl">
+                        <h4 className="font-bold text-radio-primary">Night Grooves</h4>
+                        <p className="text-sm text-zinc-500">Domingos, 22:00 - 00:00</p>
+                        <p className="text-xs mt-1">1ª Hora: DJ Durval | 2ª Hora: DJ Convidado</p>
+                      </div>
+                      <div className="p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-radio-primary">Prazeres Interrompidos</h4>
+                            <p className="text-sm text-zinc-500">Quartas e Sextas, 13:00 (Rep. 20:00)</p>
+                          </div>
+                          <a href="https://www.prazeresinterrompidos.pt/" target="_blank" className="p-2 bg-white dark:bg-zinc-700 rounded-full shadow-sm">
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="media"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-12"
+              >
+                <div className="text-center py-8">
+                  <h2 className="text-4xl font-black mb-2">Explorar Media</h2>
+                  <p className="text-zinc-500">Galeria, Vídeos e Podcasts da Web Rádio Figueiró</p>
                 </div>
-                <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
-                  <p className="text-sm font-bold">Prazeres Interrompidos - Promo</p>
-                  <audio controls className="w-full mt-2 h-8">
-                    <source src="https://www.dropbox.com/scl/fi/tz8ccze2co79c16pwq1jp/PROMO-Web-R-dio-Figueir.mp3?rlkey=88lpwhzqnl845jn86g4b4b7ai&st=try9kss2&dl=1" type="audio/mpeg" />
-                  </audio>
-                </div>
-              </div>
-            </div>
-          </section>
+
+                {/* Gallery */}
+                <section id="gallery" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-bold flex items-center gap-2">
+                      <ImageIcon className="text-radio-primary" /> Galeria WRF
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {GALLERY_IMAGES.map((img, i) => (
+                      <motion.div 
+                        key={i}
+                        whileHover={{ scale: 1.05 }}
+                        className="aspect-square rounded-2xl overflow-hidden shadow-md"
+                      >
+                        <img src={img.url} alt={`Gallery ${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </motion.div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Videos */}
+                <section className="space-y-6">
+                  <h3 className="text-2xl font-bold flex items-center gap-2">
+                    <PlayCircle className="text-radio-primary" /> Vídeos em Destaque
+                  </h3>
+                  <div className="aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black">
+                    <iframe 
+                      className="w-full h-full"
+                      src="https://www.youtube.com/embed/r5GzTRSWXgc" 
+                      title="YouTube video player" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </section>
+
+                {/* Podcasts */}
+                <section className="space-y-6">
+                  <h3 className="text-2xl font-bold flex items-center gap-2">
+                    <Music className="text-radio-primary" /> Entrevistas & Podcasts
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass p-6 rounded-3xl space-y-4">
+                      <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
+                        <p className="text-sm font-bold">Entrevista Especial: Ás da Concertina</p>
+                        <audio controls className="w-full mt-2 h-8">
+                          <source src="https://www.dropbox.com/scl/fi/u3r7msk0h6blqpjt8mrba/Entrevista-s-da-concertina-e-Vasquinho-24-01-2025.mp3?rlkey=2sb2suromeylsn0yiwoyc67mn&st=qhx3c6fq&dl=1" type="audio/mpeg" />
+                        </audio>
+                      </div>
+                    </div>
+                    <div className="glass p-6 rounded-3xl space-y-4">
+                      <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
+                        <p className="text-sm font-bold">Prazeres Interrompidos - Promo</p>
+                        <audio controls className="w-full mt-2 h-8">
+                          <source src="https://www.dropbox.com/scl/fi/tz8ccze2co79c16pwq1jp/PROMO-Web-R-dio-Figueir.mp3?rlkey=88lpwhzqnl845jn86g4b4b7ai&st=try9kss2&dl=1" type="audio/mpeg" />
+                        </audio>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Right Column: Sidebar */}
@@ -388,8 +443,16 @@ export default function App() {
             <div className="space-y-4">
               {PARTNERS.map((partner, i) => (
                 <a key={i} href={partner.url} target="_blank" className="block p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden">
-                  <div className="h-20 mb-3 flex items-center justify-center">
-                    <img src={partner.image} alt={partner.name} className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                  <div className="h-20 mb-3 flex items-center justify-center bg-zinc-50 dark:bg-zinc-900/50 rounded-xl">
+                    <img 
+                      src={partner.image} 
+                      alt={partner.name} 
+                      className="max-h-full max-w-full object-contain" 
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(partner.name)}&background=f27d26&color=fff`;
+                      }}
+                    />
                   </div>
                   <p className="text-lg font-bold text-radio-primary leading-tight mb-1">{partner.name}</p>
                   <p className="text-xs text-zinc-500">Visita o nosso site oficial para mais informações.</p>

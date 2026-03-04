@@ -158,7 +158,9 @@ export const Player: React.FC = () => {
             {artwork ? (
               <img src={artwork} alt="Capa" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <img src="/logo.png" alt="Logo WRF" className="w-full h-full object-cover p-2" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-radio-primary/20 to-zinc-800 p-4">
+                <Disc className={`w-full h-full text-radio-primary ${isPlaying ? 'animate-pulse' : ''}`} />
+              </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-700" />
