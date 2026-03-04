@@ -237,16 +237,24 @@ export default function App() {
                     </div>
                     <ul className="space-y-4">
                       <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                        <span className="font-medium">Manhãs WRF</span>
-                        <span className="text-zinc-500">08:00 - 12:00</span>
+                        <span className="font-medium">Manhãs Figueiró</span>
+                        <span className="text-zinc-500">08:00 - 10:00</span>
                       </li>
                       <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                        <span className="font-medium">Tardes de Música</span>
-                        <span className="text-zinc-500">14:00 - 18:00</span>
+                        <span className="font-medium">Top Hits</span>
+                        <span className="text-zinc-500">10:00 - 13:00</span>
                       </li>
                       <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                        <span className="font-medium">Noites Tranquilas</span>
-                        <span className="text-zinc-500">21:00 - 00:00</span>
+                        <span className="font-medium">Almoço Musical</span>
+                        <span className="text-zinc-500">13:00 - 15:00</span>
+                      </li>
+                      <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                        <span className="font-medium">Tardes em Movimento</span>
+                        <span className="text-zinc-500">15:00 - 19:00</span>
+                      </li>
+                      <li className="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                        <span className="font-medium">Noite Digital</span>
+                        <span className="text-zinc-500">19:00 - 08:00</span>
                       </li>
                     </ul>
                   </div>

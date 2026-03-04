@@ -67,6 +67,36 @@ export const Player: React.FC = () => {
     }
   }, [volume, isMuted]);
 
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: metadata.title,
+        artist: metadata.artist,
+        album: 'Web Rádio Figueiró',
+        artwork: artwork ? [
+          { src: artwork, sizes: '512x512', type: 'image/jpeg' }
+        ] : [
+          { src: 'https://ui-avatars.com/api/?name=WRF&background=f27d26&color=fff&size=512', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', togglePlay);
+      navigator.mediaSession.setActionHandler('pause', togglePlay);
+      navigator.mediaSession.setActionHandler('stop', () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+        }
+      });
+    }
+  }, [metadata, artwork]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [isPlaying]);
+
   const togglePlay = async () => {
     if (!audioRef.current) return;
 
@@ -146,6 +176,8 @@ export const Player: React.FC = () => {
 
         <audio 
           ref={audioRef} 
+          playsInline
+          preload="metadata"
         />
 
         {/* Album Art / Logo Disc */}
