@@ -95,18 +95,18 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-tight hidden sm:block">Web Rádio Figueiró</h1>
           </div>
 
-          <nav className="flex items-center gap-2 md:gap-4 bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl">
+          <nav className="flex items-center gap-2 md:gap-4 bg-zinc-200 dark:bg-zinc-800 p-1.5 rounded-2xl shadow-inner">
             <button 
               onClick={() => setActiveTab('home')}
-              className={`px-4 py-2 text-xs md:text-sm font-bold rounded-xl transition-all ${activeTab === 'home' ? 'bg-radio-primary text-white shadow-md scale-105' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+              className={`px-6 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all duration-300 ${activeTab === 'home' ? 'bg-radio-primary text-white shadow-lg scale-105 ring-2 ring-white/20' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-300/50 dark:hover:bg-zinc-700/50'}`}
             >
-              Início
+              INÍCIO
             </button>
             <button 
               onClick={() => setActiveTab('media')}
-              className={`px-4 py-2 text-xs md:text-sm font-bold rounded-xl transition-all ${activeTab === 'media' ? 'bg-radio-primary text-white shadow-md scale-105' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}`}
+              className={`px-6 py-2.5 text-xs md:text-sm font-black rounded-xl transition-all duration-300 ${activeTab === 'media' ? 'bg-radio-primary text-white shadow-lg scale-105 ring-2 ring-white/20' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-300/50 dark:hover:bg-zinc-700/50'}`}
             >
-              Explorar Media
+              EXPLORAR MEDIA
             </button>
           </nav>
 
@@ -387,7 +387,7 @@ export default function App() {
           </div>
 
           {/* Song Request Form */}
-          <div className="glass p-6 rounded-3xl shadow-lg">
+          <div id="request-form" className="glass p-6 rounded-3xl shadow-lg border-2 border-transparent focus-within:border-radio-primary/30 transition-colors">
             <h3 className="font-bold mb-4 flex items-center gap-2 text-radio-primary">
               <Music size={18} /> Pedir uma Música
             </h3>
