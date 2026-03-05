@@ -552,6 +552,14 @@ export default function App() {
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto px-4 py-12 border-t border-zinc-200 dark:border-zinc-800 text-center">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="bg-zinc-100 dark:bg-zinc-800/50 px-6 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm inline-flex flex-col items-center">
+            <span className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">Total de Visitas</span>
+            <span className="text-2xl font-black text-radio-primary tabular-nums">
+              {visitCount.toLocaleString()}
+            </span>
+          </div>
+        </div>
         <p className="text-sm text-zinc-500">
           © {new Date().getFullYear()} Web Rádio Figueiró. Todos os direitos reservados.
         </p>

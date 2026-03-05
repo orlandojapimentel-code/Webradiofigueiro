@@ -13,9 +13,38 @@ export const Player: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
-  const analyzerRef = useRef<AnalyserNode | null>(null);
-  const contextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const wakeLockRef = useRef<any>(null);
+
+  // Wake Lock implementation
+  const requestWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log('Wake Lock is active');
+      } catch (err) {
+        console.error(`${(err as Error).name}, ${(err as Error).message}`);
+      }
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        // Re-request wake lock if tab becomes visible again
+        await requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying]);
 
   useEffect(() => {
     // MutationObserver to watch for metadata changes in hidden elements
@@ -103,6 +132,7 @@ export const Player: React.FC = () => {
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
+      releaseWakeLock();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     } else {
       // Ensure volume is set before playing
@@ -115,6 +145,7 @@ export const Player: React.FC = () => {
       try {
         await audioRef.current.play();
         setIsPlaying(true);
+        await requestWakeLock();
         startSimulatedVisualizer();
       } catch (error) {
         console.error('Playback failed:', error);
@@ -122,6 +153,40 @@ export const Player: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleStalled = () => {
+      console.warn('Audio stalled, attempting to resume...');
+      if (isPlaying) {
+        audio.load();
+        audio.play().catch(e => console.error('Resume failed:', e));
+      }
+    };
+
+    const handleError = () => {
+      console.error('Audio error occurred, reconnecting...');
+      if (isPlaying) {
+        setTimeout(() => {
+          const cacheBuster = `&t=${Date.now()}`;
+          audio.src = RADIO_STREAM_URL + cacheBuster;
+          audio.play().catch(e => console.error('Reconnection failed:', e));
+        }, 2000);
+      }
+    };
+
+    audio.addEventListener('stalled', handleStalled);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('waiting', handleStalled);
+
+    return () => {
+      audio.removeEventListener('stalled', handleStalled);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('waiting', handleStalled);
+    };
+  }, [isPlaying]);
 
   const startSimulatedVisualizer = () => {
     if (!canvasRef.current) return;
