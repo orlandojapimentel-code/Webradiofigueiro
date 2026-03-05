@@ -144,6 +144,15 @@ export const Player: React.FC = () => {
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    if (isPlaying) {
+      startSimulatedVisualizer();
+    } else {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    }
+  }, [isPlaying]);
+
   const togglePlay = async () => {
     if (!audioRef.current || isLoading) return;
 
@@ -153,7 +162,6 @@ export const Player: React.FC = () => {
         setIsPlaying(false);
         setIsLoading(false);
         releaseWakeLock();
-        if (animationRef.current) cancelAnimationFrame(animationRef.current);
       } catch (err) {
         console.error('Pause error:', err);
       }
@@ -180,7 +188,6 @@ export const Player: React.FC = () => {
         setIsPlaying(true);
         setIsLoading(false);
         await requestWakeLock();
-        startSimulatedVisualizer();
       } catch (error) {
         console.error('Playback failed:', error);
         setIsPlaying(false);
@@ -239,33 +246,46 @@ export const Player: React.FC = () => {
   }, [isPlaying]);
 
   const startSimulatedVisualizer = () => {
-    if (!canvasRef.current || window.innerWidth < 768) return; // Disable on mobile to save CPU
+    if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { alpha: false }); // Optimization
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const bufferLength = 20; // Reduced for performance
+    const bufferLength = 20;
     
     const renderFrame = () => {
-      if (!isPlayingRef.current) return;
+      if (!isPlayingRef.current) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+      
       animationRef.current = requestAnimationFrame(renderFrame);
       
-      const isDark = document.documentElement.classList.contains('dark');
-      ctx.fillStyle = isDark ? '#18181b' : '#ffffff'; // Match background
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      const barWidth = (canvas.width / bufferLength) * 1.5;
+      const barWidth = (canvas.width / bufferLength) * 0.8;
       let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        barHeight = Math.random() * 35 + 5;
+        // More "organic" movement than pure random
+        const time = Date.now() / 1000;
+        const noise = Math.sin(time * 5 + i) * 10 + Math.sin(time * 3 + i * 0.5) * 5;
+        barHeight = Math.max(4, 25 + noise + Math.random() * 10);
         
         ctx.fillStyle = '#f27d26';
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        
+        // Fallback for browsers that don't support roundRect
+        if ('roundRect' in ctx) {
+          ctx.beginPath();
+          (ctx as any).roundRect(x, canvas.height - barHeight, barWidth, barHeight, 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        }
 
-        x += barWidth + 4;
+        x += barWidth + (canvas.width / bufferLength) * 0.2;
       }
     };
 
@@ -384,7 +404,7 @@ export const Player: React.FC = () => {
         </div>
 
         {/* Visualizer */}
-        <div className="hidden lg:block w-48 h-16">
+        <div className="hidden md:block w-48 h-16">
           <canvas ref={canvasRef} width={200} height={60} className="w-full h-full" />
         </div>
       </div>
