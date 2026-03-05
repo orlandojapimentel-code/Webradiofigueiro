@@ -1,5 +1,5 @@
 {
   "name": "Web Rádio Figueiró",
   "description": "A rádio que te acompanha. Emissão online 24h com a melhor música, notícias e entretenimento.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["screen-wake-lock"]
 }

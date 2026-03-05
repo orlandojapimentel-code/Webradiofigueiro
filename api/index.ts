@@ -55,6 +55,24 @@ app.post("/api/visits/increment", async (req, res) => {
   }
 });
 
+app.get("/api/artwork", async (req, res) => {
+  const { artist, title } = req.query;
+  if (!artist || !title) {
+    return res.status(400).json({ error: "Artist and title are required" });
+  }
+
+  try {
+    const query = encodeURIComponent(`${artist} ${title}`);
+    const itunesUrl = `https://itunes.apple.com/search?term=${query}&entity=song&limit=1`;
+    const response = await fetch(itunesUrl);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Error proxying artwork request:", error);
+    res.status(500).json({ error: "Failed to fetch artwork from iTunes" });
+  }
+});
+
 // Local Development Setup
 if (!process.env.VERCEL) {
   const setupDev = async () => {

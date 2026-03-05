@@ -5,6 +5,7 @@ import { RADIO_STREAM_URL } from '../constants';
 
 export const Player: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [metadata, setMetadata] = useState({ title: 'Web Rádio Figueiró', artist: 'A rádio que te acompanha' });
@@ -14,6 +15,13 @@ export const Player: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const wakeLockRef = useRef<any>(null);
+  const isPlayingRef = useRef(false);
+  const widgetContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync ref with state
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // Wake Lock implementation
   const requestWakeLock = async () => {
@@ -22,7 +30,11 @@ export const Player: React.FC = () => {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
         console.log('Wake Lock is active');
       } catch (err) {
-        console.error(`${(err as Error).name}, ${(err as Error).message}`);
+        if ((err as Error).name === 'NotAllowedError') {
+          console.warn('Wake Lock is disallowed by permissions policy in this environment.');
+        } else {
+          console.error(`${(err as Error).name}, ${(err as Error).message}`);
+        }
       }
     }
   };
@@ -47,27 +59,33 @@ export const Player: React.FC = () => {
   }, [isPlaying]);
 
   useEffect(() => {
+    if (!widgetContainerRef.current) return;
+
     // MutationObserver to watch for metadata changes in hidden elements
     const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+      for (const mutation of mutations) {
         if (mutation.type === 'characterData' || mutation.type === 'childList') {
-          const songElement = document.querySelector('.cc_streaminfo[data-type="song"]');
+          const songElement = widgetContainerRef.current?.querySelector('.cc_streaminfo[data-type="song"]');
           if (songElement) {
             const text = songElement.textContent || '';
             if (text && text !== 'Carregando ...') {
               const parts = text.split(' - ');
               const artist = parts[0] || 'Web Rádio Figueiró';
               const title = parts[1] || 'Emissão em Direto';
-              setMetadata({ title, artist });
-              fetchArtwork(artist, title);
+              
+              // Only update if metadata actually changed to avoid unnecessary renders
+              setMetadata(prev => {
+                if (prev.title === title && prev.artist === artist) return prev;
+                fetchArtwork(artist, title);
+                return { title, artist };
+              });
             }
           }
         }
-      });
+      }
     });
 
-    const target = document.body;
-    observer.observe(target, { childList: true, subtree: true, characterData: true });
+    observer.observe(widgetContainerRef.current, { childList: true, subtree: true, characterData: true });
 
     return () => {
       observer.disconnect();
@@ -76,8 +94,8 @@ export const Player: React.FC = () => {
 
   const fetchArtwork = async (artist: string, title: string) => {
     try {
-      const query = encodeURIComponent(`${artist} ${title}`);
-      const response = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`);
+      const response = await fetch(`/api/artwork?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
+      if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       if (data.results && data.results.length > 0) {
         setArtwork(data.results[0].artworkUrl100.replace('100x100', '600x600'));
@@ -85,7 +103,7 @@ export const Player: React.FC = () => {
         setArtwork(null);
       }
     } catch (error) {
-      console.error('Error fetching artwork:', error);
+      console.error('Error fetching artwork via proxy:', error);
       setArtwork(null);
     }
   };
@@ -127,29 +145,48 @@ export const Player: React.FC = () => {
   }, [isPlaying]);
 
   const togglePlay = async () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || isLoading) return;
 
     if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-      releaseWakeLock();
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      try {
+        audioRef.current.pause();
+        setIsPlaying(false);
+        setIsLoading(false);
+        releaseWakeLock();
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      } catch (err) {
+        console.error('Pause error:', err);
+      }
     } else {
-      // Ensure volume is set before playing
-      audioRef.current.volume = isMuted ? 0 : volume;
-      
-      // Cache-busting reconnection
-      const cacheBuster = `&t=${Date.now()}`;
-      audioRef.current.src = RADIO_STREAM_URL + cacheBuster;
+      setIsLoading(true);
       
       try {
-        await audioRef.current.play();
+        // Ensure volume is set before playing
+        audioRef.current.volume = isMuted ? 0 : volume;
+        
+        // Cache-busting reconnection
+        const separator = RADIO_STREAM_URL.includes('?') ? '&' : '?';
+        const cacheBuster = `${separator}t=${Date.now()}`;
+        audioRef.current.src = RADIO_STREAM_URL + cacheBuster;
+        
+        // Use a timeout to prevent hanging on play()
+        const playPromise = audioRef.current.play();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Playback timeout')), 10000)
+        );
+
+        await Promise.race([playPromise, timeoutPromise]);
+        
         setIsPlaying(true);
+        setIsLoading(false);
         await requestWakeLock();
         startSimulatedVisualizer();
       } catch (error) {
         console.error('Playback failed:', error);
         setIsPlaying(false);
+        setIsLoading(false);
+        // Reset src on failure
+        if (audioRef.current) audioRef.current.src = "";
       }
     }
   };
@@ -158,67 +195,77 @@ export const Player: React.FC = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    const handleCanPlay = () => setIsLoading(false);
+    const handleWaiting = () => setIsLoading(true);
+    const handlePlaying = () => {
+      setIsPlaying(true);
+      setIsLoading(false);
+    };
+
     const handleStalled = () => {
       console.warn('Audio stalled, attempting to resume...');
       if (isPlaying) {
-        audio.load();
-        audio.play().catch(e => console.error('Resume failed:', e));
+        // Don't call load() immediately, just try to play if paused
+        if (audio.paused) audio.play().catch(e => console.error('Resume failed:', e));
       }
     };
 
     const handleError = () => {
       console.error('Audio error occurred, reconnecting...');
       if (isPlaying) {
+        setIsLoading(true);
         setTimeout(() => {
-          const cacheBuster = `&t=${Date.now()}`;
+          const separator = RADIO_STREAM_URL.includes('?') ? '&' : '?';
+          const cacheBuster = `${separator}t=${Date.now()}`;
           audio.src = RADIO_STREAM_URL + cacheBuster;
           audio.play().catch(e => console.error('Reconnection failed:', e));
-        }, 2000);
+        }, 3000);
       }
     };
 
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('stalled', handleStalled);
     audio.addEventListener('error', handleError);
-    audio.addEventListener('waiting', handleStalled);
 
     return () => {
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
       audio.removeEventListener('stalled', handleStalled);
       audio.removeEventListener('error', handleError);
-      audio.removeEventListener('waiting', handleStalled);
     };
   }, [isPlaying]);
 
   const startSimulatedVisualizer = () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || window.innerWidth < 768) return; // Disable on mobile to save CPU
     
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Optimization
     if (!ctx) return;
 
-    const bufferLength = 32;
-    const dataArray = new Uint8Array(bufferLength);
-
+    const bufferLength = 20; // Reduced for performance
+    
     const renderFrame = () => {
+      if (!isPlayingRef.current) return;
       animationRef.current = requestAnimationFrame(renderFrame);
       
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const isDark = document.documentElement.classList.contains('dark');
+      ctx.fillStyle = isDark ? '#18181b' : '#ffffff'; // Match background
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      const barWidth = (canvas.width / bufferLength) * 2;
+      const barWidth = (canvas.width / bufferLength) * 1.5;
       let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        // Simulated movement
-        barHeight = Math.random() * 40 + 5;
+        barHeight = Math.random() * 35 + 5;
         
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, '#f27d26');
-        gradient.addColorStop(1, '#ff4e00');
-
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = '#f27d26';
         ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
-        x += barWidth + 2;
+        x += barWidth + 4;
       }
     };
 
@@ -228,29 +275,42 @@ export const Player: React.FC = () => {
   useEffect(() => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      releaseWakeLock();
     };
   }, []);
 
+  const isDarkMode = document.documentElement.classList.contains('dark');
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slow-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-slow-spin {
+          animation: slow-spin 12s linear infinite;
+        }
+        .animate-slow-spin-paused {
+          animation-play-state: paused;
+        }
+      `}} />
       <div className="max-w-6xl mx-auto glass rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row items-center gap-6 p-4 md:p-6">
         {/* Hidden Centova Widgets */}
-        <div className="hidden">
+        <div className="hidden" ref={widgetContainerRef}>
           <span className="cc_streaminfo" data-type="song" data-username="orlando"></span>
         </div>
 
         <audio 
           ref={audioRef} 
           playsInline
-          preload="metadata"
+          preload="auto"
         />
 
         {/* Album Art / Logo Disc */}
         <div className="relative w-24 h-24 md:w-32 md:h-32 flex-shrink-0">
-          <motion.div 
-            animate={{ rotate: isPlaying ? 360 : 0 }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="w-full h-full rounded-full border-4 border-zinc-800 shadow-xl overflow-hidden bg-zinc-900 flex items-center justify-center relative"
+          <div 
+            className={`w-full h-full rounded-full border-4 border-zinc-800 shadow-xl overflow-hidden bg-zinc-900 flex items-center justify-center relative ${isPlaying ? 'animate-slow-spin' : 'animate-slow-spin animate-slow-spin-paused'}`}
           >
             {artwork ? (
               <img src={artwork} alt="Capa" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -261,7 +321,7 @@ export const Player: React.FC = () => {
             )}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-zinc-800 rounded-full border-2 border-zinc-700" />
-          </motion.div>
+          </div>
           
           {/* Neon Pulse */}
           <AnimatePresence>
@@ -289,9 +349,16 @@ export const Player: React.FC = () => {
           <div className="mt-4 flex items-center justify-center md:justify-start gap-4">
             <button 
               onClick={togglePlay}
-              className="w-12 h-12 rounded-full bg-radio-primary text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+              disabled={isLoading}
+              className="w-12 h-12 rounded-full bg-radio-primary text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isPlaying ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+              {isLoading ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <Pause fill="currentColor" />
+              ) : (
+                <Play fill="currentColor" className="ml-1" />
+              )}
             </button>
             
             <div className="flex items-center gap-2 group">

@@ -1,4 +1,4 @@
-export const RADIO_STREAM_URL = "https://rs2.ptservidor.com/proxy/orlando?mp=/stream?type=.mp3";
+export const RADIO_STREAM_URL = "https://rs2.ptservidor.com/proxy/orlando?mp=/stream";
 export const RADIO_WEBSITE = "https://www.webradiofigueiro.pt";
 export const RADIO_EMAIL = "webradiofigueiro@gmail.com";
 export const RADIO_PHONE = "+351 910270085";

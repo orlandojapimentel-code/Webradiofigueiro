@@ -15,60 +15,61 @@ export default function App() {
 
   useEffect(() => {
     console.log('App component mounted');
-    try {
-      // Dynamically load Centova Cast scripts
-      const scripts = [
-        "https://rs2.ptservidor.com:2199/system/recenttracks.js",
-        "https://rs2.ptservidor.com:2199/system/streaminfo.js",
-        "https://rs2.ptservidor.com:2199/system/request.js"
-      ];
+    
+    // Dynamically load Centova Cast scripts only once
+    const scripts = [
+      "https://rs2.ptservidor.com:2199/system/recenttracks.js",
+      "https://rs2.ptservidor.com:2199/system/streaminfo.js",
+      "https://rs2.ptservidor.com:2199/system/request.js"
+    ];
 
-      scripts.forEach(src => {
+    scripts.forEach(src => {
+      if (!document.querySelector(`script[src="${src}"]`)) {
         const script = document.createElement('script');
         script.src = src;
         script.async = true;
         document.body.appendChild(script);
-      });
-
-      // Increment visit count on load
-      fetch('/api/visits/increment', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => setVisitCount(data.count))
-        .catch(err => console.error('Error incrementing visits:', err));
-
-      // Fetch weather (mocking for Figueiró, Amarante)
-      setWeather({ temp: 18, condition: 'Parcialmente Nublado', city: 'Figueiró' });
-
-      // Mock news
-      setNews([
-        { 
-          title: "Amarante celebra tradições locais no próximo fim de semana", 
-          source: "Google Notícias", 
-          time: "Há 2 horas",
-          link: "https://news.google.com/search?q=Amarante+tradições+locais"
-        },
-        { 
-          title: "Web Rádio Figueiró lança novo assistente de IA para ouvintes", 
-          source: "WRF News", 
-          time: "Há 5 horas",
-          link: "https://news.google.com/search?q=Web+Rádio+Figueiró+IA+assistente"
-        },
-        { 
-          title: "Previsão do tempo: Sol regressa à região norte", 
-          source: "Meteo PT", 
-          time: "Há 1 dia",
-          link: "https://news.google.com/search?q=Previsão+do+tempo+Amarante"
-        }
-      ]);
-
-      // Dark mode class
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
       }
-    } catch (error) {
-      console.error('Error in App useEffect:', error);
+    });
+
+    // Increment visit count on load
+    fetch('/api/visits/increment', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => setVisitCount(data.count))
+      .catch(err => console.error('Error incrementing visits:', err));
+
+    // Fetch weather (mocking for Figueiró, Amarante)
+    setWeather({ temp: 18, condition: 'Parcialmente Nublado', city: 'Figueiró' });
+
+    // Mock news
+    setNews([
+      { 
+        title: "Amarante celebra tradições locais no próximo fim de semana", 
+        source: "Google Notícias", 
+        time: "Há 2 horas",
+        link: "https://news.google.com/search?q=Amarante+tradições+locais"
+      },
+      { 
+        title: "Web Rádio Figueiró lança novo assistente de IA para ouvintes", 
+        source: "WRF News", 
+        time: "Há 5 horas",
+        link: "https://news.google.com/search?q=Web+Rádio+Figueiró+IA+assistente"
+      },
+      { 
+        title: "Previsão do tempo: Sol regressa à região norte", 
+        source: "Meteo PT", 
+        time: "Há 1 dia",
+        link: "https://news.google.com/search?q=Previsão+do+tempo+Amarante"
+      }
+    ]);
+  }, []);
+
+  useEffect(() => {
+    // Dark mode class
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
 
